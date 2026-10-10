@@ -93,7 +93,7 @@ python3 -m lawpre build inputs/<slug>
 
 ### 第八步：制作 PPTX（ppt-master，Quick 路线）
 
-1. 阅读 `AGENT_TASK.md`。它给出了 ppt-master 的 `SKILL.md` 路径、Quick 路线要求、页数、讲稿路径和导出路径。
+1. 阅读 `AGENT_TASK.md`，它给出了 ppt-master 的 `SKILL.md` 路径、Quick 路线要求、页数、讲稿路径和导出路径。ppt-master 的脚本必须用任务书中给出的 Python 解释器运行（已装 python-pptx、lxml），不要直接用系统 `python3`。逐页 SVG 可以手写，也可以先运行 `python3 skills/lawpre/scripts/render_svg.py inputs/<slug> <项目>/svg_output`（在仓库根目录运行；ppt-master 之外的步骤可用系统 `python3`，依赖见 requirements.txt） 生成固定版式的页面（再按需人工调整）。
 2. 按 ppt-master 的 `SKILL.md` 执行 **Quick（无交互）路线**：`quick-generate.md`。
    - 页数严格等于 `content.md` 中的页数，不新增或合并页面；
    - 讲稿 `notes/total.md` 已定稿，只校验，不改写；

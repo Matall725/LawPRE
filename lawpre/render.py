@@ -14,11 +14,14 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from .inputs import Inputs, Report
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 DRAFT_BANNER = "草稿：含未完全核验的法律依据，未经人工法律审查前不得作为最终版本"
 
@@ -185,6 +188,7 @@ def render_agent_task(
 ) -> str:
     brief = inputs.brief
     slides = len(inputs.slides)
+    py = sys.executable  # 运行 LawPRE 的解释器（doctor 已检查其 ppt-master 依赖）
     draft_line = (
         f"**草稿标注（必须）**：在封面页底部小字注明“{DRAFT_BANNER}”。"
         if report.draft else "本次依据均已核验；仍请在封面注明“待人工审查”。"
@@ -220,10 +224,12 @@ def render_agent_task(
 ## 4. 执行步骤
 
 1. 按 SKILL.md 与 Quick 路线完成 Plan（§2）与逐页 SVG 编写（§3）。
+   - 可选：`{py} {REPO_ROOT / 'skills' / 'lawpre' / 'scripts' / 'render_svg.py'} {REPO_ROOT / 'inputs' / brief['slug']} <project_path>/svg_output` 生成固定版式的逐页 SVG（已通过 Quick 质检），之后按需调整。
 2. 把 `{out_dir / 'notes' / 'total.md'}` 复制到项目的 `notes/total.md`，然后依次运行：
-   - `python3 {ppt_master_dir / 'skills/ppt-master/scripts/total_md_split.py'} <project_path>`（按页拆分讲稿）
-   - `python3 {ppt_master_dir / 'skills/ppt-master/scripts/svg_quality_checker.py'} <project_path> --quick-generate --canonical-authoring --stage final --json`，直到通过
-   - `python3 {ppt_master_dir / 'skills/ppt-master/scripts/svg_to_pptx.py'} <project_path> --quick-generate --with-notes -o {out_dir / 'deck.pptx'}`
+   - `{py} {ppt_master_dir / 'skills/ppt-master/scripts/total_md_split.py'} <project_path>`（按页拆分讲稿）
+   - `{py} {ppt_master_dir / 'skills/ppt-master/scripts/svg_quality_checker.py'} <project_path> --quick-generate --canonical-authoring --stage final --json`，直到通过
+   - `{py} {ppt_master_dir / 'skills/ppt-master/scripts/svg_to_pptx.py'} <project_path> --quick-generate --with-notes -o {out_dir / 'deck.pptx'}`
+   - 以上命令必须使用 `{py}`（已安装 python-pptx 与 lxml 的解释器）。系统 `python3` 通常没有这些依赖，会直接失败。
 3. 导出后检查：
    - `{out_dir / 'deck.pptx'}` 存在，且页数为 **{slides}**；
    - 每页都有讲稿（备注）；
