@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LawPRE analysis units",
+  "description": "法律分析单元：规则、适用、反方与结论分开记录，PPT 只能由这里的内容生成。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["issues"],
+  "properties": {
+    "issues": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "issue", "rules", "application", "counterargument", "conclusion", "uncertainties"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^I\\d{2}$"},
+          "issue": {"type": "string", "minLength": 5},
+          "rules": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["source_id", "legal_proposition"],
+              "properties": {
+                "source_id": {"type": "string", "pattern": "^S\\d{3}$"},
+                "legal_proposition": {"type": "string", "minLength": 1}
+              }
+            }
+          },
+          "application": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+          "counterargument": {"type": "string", "minLength": 1},
+          "conclusion": {"type": "string", "minLength": 1},
+          "uncertainties": {"type": "array", "items": {"type": "string", "minLength": 1}}
+        }
+      }
+    }
+  }
+}

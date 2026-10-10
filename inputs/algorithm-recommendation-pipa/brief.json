@@ -1,0 +1,18 @@
+{
+  "slug": "algorithm-recommendation-pipa",
+  "course": "（示例）数据与网络法",
+  "title": "算法推荐中的个人信息保护：以《个人信息保护法》第二十四条为中心",
+  "template_type": "doctrine_analysis",
+  "duration_minutes": 10,
+  "language": "zh-CN",
+  "canvas": "ppt169",
+  "presenters": [
+    {"name": "（示例）成员 A", "role": "主讲：问题与规则"},
+    {"name": "（示例）成员 B", "role": "适用与反方"}
+  ],
+  "teacher_requirements": [
+    "围绕一个明确的法律问题展开，不做综合报告",
+    "每个结论都要能指向具体条文"
+  ],
+  "notes": "示例输入，用于验证流程。正式使用前请替换人员信息，并在人工审查后更新来源状态。"
+}

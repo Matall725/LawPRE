@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LawPRE source registry",
+  "description": "来源登记表：每个法律依据、案例或文献都必须登记，讲稿中的引用只能指向这里的 id。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["sources"],
+  "properties": {
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title", "kind", "issuer", "status", "locator"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^S\\d{3}$"},
+          "title": {"type": "string", "minLength": 1},
+          "kind": {
+            "enum": [
+              "statute",
+              "administrative_regulation",
+              "departmental_rule",
+              "judicial_interpretation",
+              "guiding_case",
+              "case",
+              "journal",
+              "book",
+              "media",
+              "other"
+            ]
+          },
+          "issuer": {"type": "string", "minLength": 1},
+          "date_published": {"type": "string", "format": "date"},
+          "date_effective": {"type": "string", "format": "date"},
+          "status": {"enum": ["已核验", "部分核验", "待核验", "不适用"]},
+          "locator": {"type": "string", "minLength": 1},
+          "url": {"type": "string"},
+          "excerpt": {"type": "string"},
+          "status_note": {"type": "string"}
+        }
+      }
+    }
+  }
+}
