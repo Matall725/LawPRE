@@ -191,7 +191,7 @@ def render_agent_task(
     )
     return f"""# 任务：用 ppt-master 技能生成一份中文 PPTX 课堂汇报
 
-你是一个在 LawPRE 流程中被调用的 agent。下面是完整任务书，请不要向用户提问，直接完成；
+你是一个在 LawPRE 流程中工作的 agent。下面是完整任务书。除非遇到无法继续的阻塞问题，请直接完成；
 无法完成的部分写入 `{out_dir / 'AGENT_REPORT.md'}` 并说明原因。
 
 ## 1. 必读的技能入口（路径固定）

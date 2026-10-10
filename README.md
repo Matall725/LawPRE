@@ -2,12 +2,13 @@
 
 法律课程汇报（PRE）的生成流程。第一轮实现的范围是：**校验输入 → 生成中文讲稿与逐页内容 → 调用 agent 按 ppt-master 技能制作 PPTX → 验收导出文件**。
 
-> 当前版本的内容（分析与讲稿）由人工或上游步骤写入输入文件，程序负责校验、一致性检查和流程编排；不会自动检索法律法规。
+> 分析与讲稿由 agent 或人工写入输入文件；程序负责校验、一致性检查、渲染和验收。程序不会自动检索法律法规，也不能判断法律结论是否正确。
 
 ## 目录
 
 ```
-lawpre/                 流程代码（校验、渲染、agent 调用、PPTX 验收）
+skills/lawpre/SKILL.md  给通用 agent 读取的操作手册（主入口）
+lawpre/                 确定性工具：初始化、校验、渲染、agent 调用、PPTX 验收
 lawpre/schemas/         输入文件的 JSON Schema
 inputs/<slug>/          一次任务的输入：brief / sources / analysis / deck
 scripts/setup_ppt_master.sh   克隆并固定 ppt-master 到已验证版本（v6.7.0）
@@ -35,37 +36,38 @@ out/<slug>/             输出（已加入 .gitignore）
 
 ## 使用
 
+LawPRE 有两种使用方式：
+
+- **通用 skill（推荐）**：`skills/lawpre/SKILL.md` 是给任何通用 agent 读取的操作手册。agent 按其中的步骤填写输入、运行校验与生成、调用 ppt-master 制作 PPTX、验收并交付。不依赖某个特定的 agent CLI。
+- **命令行**：下面的命令是 skill 调用的确定性部分，也可以人工直接使用。
+
 ```bash
 python3 -m venv ~/.venvs/lawpre && ~/.venvs/lawpre/bin/pip install -r requirements.txt
 
 PY=~/.venvs/lawpre/bin/python
-$PY -m lawpre check  inputs/algorithm-recommendation-pipa     # 只校验
-$PY -m lawpre build  inputs/algorithm-recommendation-pipa     # 生成内容包与任务书
-$PY -m lawpre run    inputs/algorithm-recommendation-pipa     # 生成并调用 agent
-$PY -m lawpre verify inputs/algorithm-recommendation-pipa     # 验收已导出的 deck.pptx
-$PY -m lawpre doctor                                          # 检查 ppt-master 环境
-$PY -m unittest discover -s tests -v                          # 运行测试
+$PY -m lawpre init   <slug>                                  # 生成 inputs/<slug>/ 模板（含待填写占位）
+$PY -m lawpre check  inputs/<slug>                           # 只校验
+$PY -m lawpre build  inputs/<slug>                           # 生成内容包与任务书
+$PY -m lawpre verify inputs/<slug>                           # 验收已导出的 deck.pptx
+$PY -m lawpre doctor                                         # 检查 ppt-master 环境
+$PY -m unittest discover -s tests -v                         # 运行测试
 ```
 
-退出码：`0` 成功；`1` 输入校验未通过；`2` 环境未就绪（缺 ppt-master，或未配置 agent，内容包仍会生成）；`3` agent 失败或超时；`4` PPTX 验收未通过。
+退出码：`0` 成功；`1` 输入校验未通过；`2` 环境未就绪；`3` agent 失败或超时；`4` PPTX 验收未通过。
 
-### 制作 PPT：ppt-master 与 agent
+### 制作 PPT：ppt-master
 
-1. 固定 ppt-master 版本：
+1. 固定 ppt-master 版本：`scripts/setup_ppt_master.sh`（默认 `~/tools/ppt-master`，可用 `PPT_MASTER_DIR` 指定）。
+2. 交给 agent 的任务书是 `out/<slug>/AGENT_TASK.md`。agent 按 ppt-master 的 `SKILL.md` 执行 **Quick（无交互）路线**，导出 `out/<slug>/deck.pptx`，并写入 `AGENT_REPORT.md`。
+3. 运行 `verify` 检查页数与每页讲稿。
 
-   ```bash
-   scripts/setup_ppt_master.sh           # 默认 ~/tools/ppt-master，可通过 PPT_MASTER_DIR 指定
-   ```
+**可选的无人值守方式**：如果你的环境有可以无交互运行的 agent 命令，可以设置 `LAWPRE_AGENT_CMD` 后直接运行 `python3 -m lawpre run inputs/<slug>`。占位符为 `{task_file}`、`{workdir}`、`{out_dir}`，例如：
 
-2. 配置 agent 命令。LawPRE 会把任务书路径替换进命令，并在 ppt-master 目录下执行。占位符：`{task_file}`、`{workdir}`、`{out_dir}`。参数以你本机 CLI 为准，例如：
+```bash
+export LAWPRE_AGENT_CMD='<你的 agent CLI> --prompt-file {task_file} --cwd {workdir}'
+```
 
-   ```bash
-   export LAWPRE_AGENT_CMD='claude -p "请阅读并完成 {task_file} 中的任务" --permission-mode acceptEdits'
-   ```
-
-3. 运行 `run`。agent 按任务书读取 ppt-master 的 `SKILL.md`，使用 **Quick（无交互）路线**，把 `notes/total.md` 作为已定稿的中文讲稿，导出 `out/<slug>/deck.pptx`，并写入 `AGENT_REPORT.md`。LawPRE 随后检查页数与每页讲稿，并写入 `result.json`。
-
-如果只想人工执行，可先运行 `build`，然后把 `out/<slug>/AGENT_TASK.md` 交给任意 agent，完成后运行 `verify`。
+这里不指定具体的 agent；参数以你所用的 CLI 为准。未设置时，`run` 只生成内容包并以退出码 2 结束。
 
 ## 输出（`out/<slug>/`）
 
@@ -81,6 +83,6 @@ $PY -m unittest discover -s tests -v                          # 运行测试
 
 ## 边界
 
-- 本仓库不包含 ppt-master，也不包含 agent 本身；需要用户自行提供 agent CLI 及其凭据。
+- 本仓库不包含 ppt-master，也不包含任何 agent；使用者需要自备 agent 及其凭据。
 - 示例输入（`inputs/algorithm-recommendation-pipa`）引用的条文已对照官方发布页面核对文本，但**现行效力尚未在国家法律法规数据库复核**，因此状态为“部分核验”，产物为草稿。
 - 人工法律审查、排练计时仍是必须的步骤，QA 报告中列出了清单。

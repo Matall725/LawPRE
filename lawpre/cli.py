@@ -1,5 +1,6 @@
 """命令行入口。
 
+    python3 -m lawpre init   <slug>                    # 生成输入模板（含待填写占位）
     python3 -m lawpre check  inputs/<slug>             # 只校验输入
     python3 -m lawpre build  inputs/<slug>             # 校验并生成内容包与 AGENT_TASK.md
     python3 -m lawpre run    inputs/<slug>             # 生成后调用 agent（需设置 LAWPRE_AGENT_CMD）
@@ -18,15 +19,17 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
 from . import agent, ppt_master
-from .inputs import load_inputs
+from .inputs import PLACEHOLDER, load_inputs
 from .render import build_outputs
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUT = REPO_ROOT / "out"
+SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]{2,60}$")
 
 
 def _print_report(report) -> None:
@@ -153,6 +156,79 @@ def cmd_verify(args) -> int:
     return _verify(inputs, out_dir)
 
 
+def _templates(slug: str) -> dict[str, dict]:
+    ph = PLACEHOLDER
+    return {
+        "brief.json": {
+            "slug": slug,
+            "course": ph,
+            "title": ph,
+            "template_type": "doctrine_analysis",
+            "duration_minutes": 10,
+            "language": "zh-CN",
+            "canvas": "ppt169",
+            "presenters": [{"name": ph}],
+        },
+        "sources.json": {
+            "sources": [
+                {
+                    "id": "S001",
+                    "title": ph,
+                    "kind": "statute",
+                    "issuer": ph,
+                    "status": "待核验",
+                    "locator": ph,
+                }
+            ]
+        },
+        "analysis.json": {
+            "issues": [
+                {
+                    "id": "I01",
+                    "issue": ph,
+                    "rules": [{"source_id": "S001", "legal_proposition": ph}],
+                    "application": [ph],
+                    "counterargument": ph,
+                    "conclusion": ph,
+                    "uncertainties": [],
+                }
+            ]
+        },
+        "deck.json": {
+            "slides": [
+                {
+                    "slide_no": i + 1,
+                    "kind": kind,
+                    "title": ph,
+                    "key_message": ph,
+                    "body": [],
+                    "source_ids": [] if kind == "cover" else ["S001"],
+                    "notes_zh": ph,
+                    "duration_seconds": 60,
+                }
+                for i, kind in enumerate(["cover", "issue", "conclusion"])
+            ]
+        },
+    }
+
+
+def cmd_init(args) -> int:
+    slug = args.slug
+    if not SLUG_RE.match(slug):
+        print("slug 只能包含小写字母、数字和连字符，长度 3–61。")
+        return 1
+    target = Path(args.root or REPO_ROOT / "inputs") / slug
+    if target.exists() and any(target.iterdir()) and not args.force:
+        print(f"{target} 已存在且非空；如需覆盖请加 --force。")
+        return 1
+    target.mkdir(parents=True, exist_ok=True)
+    for name, data in _templates(slug).items():
+        (target / name).write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(f"已生成模板：{target}")
+    print(f"请把所有 {PLACEHOLDER} 替换为实际内容，然后运行：python3 -m lawpre check {target}")
+    return 0
+
+
 def cmd_doctor(args) -> int:
     checks = ppt_master.doctor(Path(args.root) if args.root else None)
     bad = 0
@@ -172,6 +248,10 @@ def build_parser() -> argparse.ArgumentParser:
         sp.add_argument("--out", help=f"输出根目录（默认 {DEFAULT_OUT}）")
 
     add_input(sub.add_parser("check", help="只校验输入"))
+    sp = sub.add_parser("init", help="生成 inputs/<slug>/ 的模板文件")
+    sp.add_argument("slug")
+    sp.add_argument("--root", help="输入根目录（默认 inputs/）")
+    sp.add_argument("--force", action="store_true", help="覆盖已有非空目录")
     sp = sub.add_parser("build", help="校验并生成内容包")
     add_input(sp)
     sp = sub.add_parser("run", help="生成内容包并调用 agent 制作 PPTX")
@@ -186,6 +266,7 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     handlers = {
+        "init": cmd_init,
         "check": cmd_check,
         "build": cmd_build,
         "run": cmd_run,

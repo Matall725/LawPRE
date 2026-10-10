@@ -34,6 +34,8 @@ INPUT_FILES = {
     "deck": "deck.json",
 }
 
+PLACEHOLDER = "【待填写】"
+
 LEGAL_KINDS = {
     "statute",
     "administrative_regulation",
@@ -105,6 +107,13 @@ def load_inputs(input_dir: Path) -> tuple[Inputs | None, Report]:
         except json.JSONDecodeError as exc:
             report.errors.append(f"{filename} 不是合法 JSON：{exc}")
 
+    if report.errors:
+        return None, report
+
+    for key, filename in INPUT_FILES.items():
+        raw = (input_dir / filename).read_text(encoding="utf-8")
+        if PLACEHOLDER in raw:
+            report.errors.append(f"{filename} 仍含未填写的占位内容（{PLACEHOLDER}），请补全后再运行")
     if report.errors:
         return None, report
 

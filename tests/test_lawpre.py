@@ -293,5 +293,30 @@ class RunCommand(unittest.TestCase):
         self.assertFalse((self.out / "algorithm-recommendation-pipa").exists())
 
 
+class InitAndPlaceholders(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self._tmp.name)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def test_init_creates_templates_that_are_refused_until_filled(self):
+        self.assertEqual(cli.main(["init", "demo-case", "--root", str(self.root)]), 0)
+        target = self.root / "demo-case"
+        self.assertTrue((target / "deck.json").exists())
+        inputs, report = load_inputs(target)
+        self.assertIsNone(inputs)
+        self.assertTrue(any("占位内容" in e for e in report.errors))
+
+    def test_init_refuses_nonempty_dir_without_force(self):
+        cli.main(["init", "demo-case", "--root", str(self.root)])
+        self.assertEqual(cli.main(["init", "demo-case", "--root", str(self.root)]), 1)
+        self.assertEqual(cli.main(["init", "demo-case", "--root", str(self.root), "--force"]), 0)
+
+    def test_init_rejects_bad_slug(self):
+        self.assertEqual(cli.main(["init", "Bad Slug!", "--root", str(self.root)]), 1)
+
+
 if __name__ == "__main__":
     unittest.main()
