@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LawPRE brief",
+  "description": "一次 PRE 任务的基本信息。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["slug", "course", "title", "template_type", "duration_minutes", "language", "canvas", "presenters"],
+  "properties": {
+    "slug": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{2,60}$"},
+    "course": {"type": "string", "minLength": 1},
+    "title": {"type": "string", "minLength": 1},
+    "template_type": {"enum": ["doctrine_analysis"]},
+    "duration_minutes": {"type": "integer", "minimum": 5, "maximum": 30},
+    "language": {"const": "zh-CN"},
+    "canvas": {"const": "ppt169"},
+    "presenters": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "role": {"type": "string"}
+        }
+      }
+    },
+    "teacher_requirements": {"type": "array", "items": {"type": "string"}},
+    "notes": {"type": "string"}
+  }
+}
