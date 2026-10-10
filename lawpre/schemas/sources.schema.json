@@ -33,7 +33,7 @@
           "issuer": {"type": "string", "minLength": 1},
           "date_published": {"type": "string", "format": "date"},
           "date_effective": {"type": "string", "format": "date"},
-          "status": {"enum": ["已核验", "部分核验", "待核验", "不适用"]},
+          "status": {"enum": ["已核验", "部分核验", "待核验", "存在问题", "不适用"]},
           "locator": {"type": "string", "minLength": 1},
           "url": {"type": "string"},
           "excerpt": {"type": "string"},

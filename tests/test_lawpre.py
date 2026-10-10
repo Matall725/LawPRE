@@ -94,6 +94,26 @@ class SemanticChecks(TempInputs):
         _, report = self.check()
         self.assertError(report, "状态为“不适用”")
 
+    def test_problematic_source_cannot_back_a_rule(self):
+        sources = _read("sources.json")
+        sources["sources"][0]["status"] = "存在问题"
+        sources["sources"][0]["status_note"] = "第二十四条文本与原文不符"
+        self.write("sources.json", sources)
+        _, report = self.check()
+        self.assertError(report, "状态为“存在问题”")
+
+    def test_problematic_source_on_slide_is_draft_warning(self):
+        sources = _read("sources.json")
+        sources["sources"][1]["status"] = "存在问题"
+        sources["sources"][1]["status_note"] = "待修正"
+        self.write("sources.json", sources)
+        deck = _read("deck.json")
+        deck["slides"][5]["source_ids"] = ["S001"]  # 第 6 页不再引用 S002
+        self.write("deck.json", deck)
+        _, report = self.check()
+        self.assertTrue(report.draft)
+        self.assertNotIn("存在问题", " ".join(report.errors))
+
     def test_slide_without_sources_is_error(self):
         deck = _read("deck.json")
         deck["slides"][4]["source_ids"] = []

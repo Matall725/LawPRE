@@ -44,7 +44,9 @@ LEGAL_KINDS = {
     "guiding_case",
 }
 # 这些状态的来源不能被当作已确认的依据
-UNVERIFIED = {"待核验", "部分核验"}
+UNVERIFIED = {"待核验", "部分核验", "存在问题"}
+# 这些状态的来源不能作为规则依据（规则引用时报错）
+NOT_USABLE_AS_RULE = {"不适用", "存在问题"}
 
 
 @dataclass
@@ -157,8 +159,10 @@ def check_semantics(inputs: Inputs) -> Report:
             sid = rule["source_id"]
             if sid not in sources:
                 r.errors.append(f"{issue['id']} 的规则引用了未登记的来源 {sid}")
-            elif sources[sid]["status"] == "不适用":
-                r.errors.append(f"{issue['id']} 的规则引用了状态为“不适用”的来源 {sid}")
+            elif sources[sid]["status"] in NOT_USABLE_AS_RULE:
+                r.errors.append(
+                    f"{issue['id']} 的规则引用了状态为“{sources[sid]['status']}”的来源 {sid}，不能作为依据"
+                )
 
     # 3. 逐页结构
     numbers = [s["slide_no"] for s in slides]
